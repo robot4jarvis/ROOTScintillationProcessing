@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "checkTimeVariance.C": "cpp",
+        "loop.C": "cpp",
+        "macro.C": "cpp",
+        "checkPositionalDependence.C": "cpp"
+    }
+}

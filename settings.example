@@ -1,0 +1,31 @@
+// How to launch? Run grapher.C using this filename as the only parameter.
+// The histograms will be retreived from the file indicated in the corresponding lines.
+// Then, a Gaussian (G)/double gaussian (D) can be fitted within the corresponding regions of interest. The background fitted can contain a step function (1) or not (0)
+// Do not, under any circumstance, remove the brackets in this file nor add aditional lines (except where indicated)
+
+================================
+Filename: ["Histograms.root"]
+Number_of_entries: [] (number of histograms in the file)
+================================
+// Each histogram corresponds to a line.
+0- [G1][1000,1300], [D1][1000,1200,1300]
+1- 
+2-
+3-
+================================
+// Here goes the settings of the X axis
+X_axis_title: [Name of the X axis]
+X_values_(N values): [, , , , , ,]
+X_values_uncertainty: [          ]
+================================
+The results can be fitted to a function of the form f(x) = a x^2 + b x + c.
+The values a,b,c can be fixed. Write the corresponding value in brackets.
+Do you want to? (y/n) = [y]
+(a,b,c) = [0,-,0]
+
+================================
+Additionally, you can save the corresponding results to a new root file:
+Output filename: ["Results.root"]
+Option: ["UPDATE"] ("UPDATE, "RECREATE", etc.)
+
+
