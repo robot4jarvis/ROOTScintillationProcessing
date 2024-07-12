@@ -1,4 +1,4 @@
-// How to launch? Run grapher.C using this filename as the only parameter.
+// How to launch? Run macro.C using this filename as the only parameter.
 // The histograms will be retreived from the file indicated in the corresponding lines.
 // Then, a Gaussian (G)/double gaussian (D) can be fitted within the corresponding regions of interest. The background fitted can contain a step function (1) or not (0)
 // Do not, under any circumstance, remove the brackets in this file nor add aditional lines (except where indicated)

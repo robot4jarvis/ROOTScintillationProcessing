@@ -102,6 +102,8 @@ void macro(string configFileName = "settings.example"){
 
     while(getline(configFile,line)) if (line[0] == '>') break; // We skip until the next interesting line
     double_t x[N]; double_t Ex[N]; double_t mean[N]; double_t Emean[N]; double_t sigma[N]; double_t Esigma[N];
+    double_t Res[N]; double_t ERes[N];
+
     TString histName; TString histTitle; string set; double_t xmin; double_t xmid; double_t xmax;
     int i = 0;
     while (i<N){
@@ -139,7 +141,6 @@ void macro(string configFileName = "settings.example"){
                     sigma[i] = funfit->GetParameter(8); Esigma[i] = funfit->GetParError(8);
                     i++;
             }
-            
         }
         TCanvas *c1 = new TCanvas();
         hist->Draw();
@@ -155,7 +156,7 @@ void macro(string configFileName = "settings.example"){
         //reads x string
         c = xString[ii];
         if(c == ' ') continue;
-        if(c == ','){
+        if((c == ',') || (ii == xString.length()-1)){
             x[j] = stod(val);
             j++;
             val = "";
@@ -170,7 +171,7 @@ void macro(string configFileName = "settings.example"){
         //reads x string
         c = xString[ii];
         if(c == ' ') continue;
-        if(c == ','){
+        if((c == ',')||(ii == xString.length()-1)){
             Ex[j] = stod(val);
             j++;
             val = "";
@@ -178,9 +179,16 @@ void macro(string configFileName = "settings.example"){
         else val = val + c;
     }
 
+    for(i = 0; i < N; i++){
+        Res[i]=235.5 * sigma[i]/mean[i];
+        ERes[i] = Res[i] * (Esigma[i]/sigma[i] + Emean[i]/mean[i]);
+    }
 
     TGraphErrors *grMean = new TGraphErrors(N,x, mean,Ex,Emean); grMean->SetTitle("Mean peak position depending on " + xAxisName);
     grMean->GetXaxis()->SetTitle(xAxisName);     grMean->GetYaxis()->SetTitle("ADC channel"); 
     TCanvas *cGrMean = new TCanvas(); grMean->SetMarkerStyle(2); grMean->Draw("AP"); // We draw the energy-ADC channel graph
-    
+
+    TGraphErrors *grRes = new TGraphErrors(N,x, Res,Ex,ERes); grRes->SetTitle("Resolution");
+    grRes->GetXaxis()->SetTitle(xAxisName);     grRes->GetYaxis()->SetTitle("Resolution"); 
+    TCanvas *cGrRes = new TCanvas(); grRes->SetMarkerStyle(2); grRes->Draw("AP"); // We draw the energy-ADC channel graph
 }
