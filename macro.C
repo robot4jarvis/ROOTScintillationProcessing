@@ -104,7 +104,7 @@ void macro(string configFileName = "settings.example"){
     double_t x[N]; double_t Ex[N]; double_t mean[N]; double_t Emean[N]; double_t sigma[N]; double_t Esigma[N];
     TString histName; TString histTitle; string set; double_t xmin; double_t xmid; double_t xmax;
     int i = 0;
-    while (true){
+    while (i<N){
         getline(configFile,line);
         if (line[0] != '>') break; // If we finished reading those values, we exit.
         histName = line.substr(line.find('"')+1,line.find('"',line.find('"')+1)-line.find('"')-1); line.erase(0,line.find('"',line.find('"')+1)+1);
@@ -125,7 +125,7 @@ void macro(string configFileName = "settings.example"){
                     sigma[i] = funfit->GetParameter(1); Esigma[i] = funfit->GetParError(1);
                     i++;
 
-            } else if(set[1] == 'D'){
+            } else if(set[0] == 'D'){
                 xmin = stod(set.substr(set.find(",")+1,set.find(",",set.find(",")+1))); set.erase(0,set.find(",",set.find(",")+1));
                 xmid = stod(set.substr(set.find(",")+1,set.find(",",set.find(",")+1))); set.erase(0,set.find(",",set.find(",")+1));
                 xmax = stod(set.substr(set.find(",")+1,set.find(",",set.find(",")+1))); set.erase(0,set.find(",",set.find(",")+1));
@@ -145,9 +145,42 @@ void macro(string configFileName = "settings.example"){
         hist->Draw();
     }
 
+    while(getline(configFile,line)) if (line[0] == '>') break; // We skip until the next interesting line
+    TString xAxisName = line.substr(line.find("[")+2,line.find("]")-line.find("[")-3);
 
 
+    while(getline(configFile,line)) if (line[0] == '>') break; string xString = line.substr(line.find("[")+1,line.find("]")-line.find("[")-2);
+    string val; char c; int j = 0;
+    for(int ii = 0; ii < xString.length(); ii ++){
+        //reads x string
+        c = xString[ii];
+        if(c == ' ') continue;
+        if(c == ','){
+            x[j] = stod(val);
+            j++;
+            val = "";
+        }
+        else val = val + c;
+    }
+    
+
+    while(getline(configFile,line)) if (line[0] == '>') break; xString = line.substr(line.find("[")+1,line.find("]")-line.find("[")-2);
+    val = ""; j = 0;
+    for(int ii = 0; ii < xString.length(); ii ++){
+        //reads x string
+        c = xString[ii];
+        if(c == ' ') continue;
+        if(c == ','){
+            Ex[j] = stod(val);
+            j++;
+            val = "";
+        }
+        else val = val + c;
+    }
 
 
-
+    TGraphErrors *grMean = new TGraphErrors(N,x, mean,Ex,Emean); grMean->SetTitle("Mean peak position depending on " + xAxisName);
+    grMean->GetXaxis()->SetTitle(xAxisName);     grMean->GetYaxis()->SetTitle("ADC channel"); 
+    TCanvas *cGrMean = new TCanvas(); grMean->SetMarkerStyle(2); grMean->Draw("AP"); // We draw the energy-ADC channel graph
+    
 }
