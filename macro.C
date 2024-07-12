@@ -1,4 +1,5 @@
-#define N 10
+#include <iostream>
+#include <fstream>
 #include <string>
 #include <TFile.h>
 #include <TNtuple.h>
@@ -16,7 +17,7 @@
 #include <TGraphErrors.h>
 #include <TKey.h>
 #include <TH1D.h>
-
+using namespace std;
 
 double GEL(double *x, double *par) {  // gauss + erc + lin
     // Seven parameters to fit.
@@ -56,62 +57,22 @@ TF1 *fitGEL(TH1D *hist, double xmin, double xmax){
     return funGEL;
 }
 
-void checkPositionalDependence(){
-    TString name = "J1";
-
-    //regions of interest
-  //  double xmin = 750; double xmax = 950; //G2
-    double xmin = 800; double xmax = 1100;  //J1
-    //double xmin = 1050; double xmax = 1300; //Z2
-
-    double pos[N]; double Epos[N];
-    int i = 0;
-    double mean[N]; double sigma[N]; double Res[N];
-    double Emean[N]; double Esigma[N]; double ERes[N];
-
-    // We open the Histograms file and extract all data (that we will use for calibration)
-    TFile *fin = new TFile("Histograms" + name + ".root");
-
-    for(auto k : *fin->GetListOfKeys()) {  // Loop over all objects in the file
-        TKey *key = static_cast<TKey*>(k);
-        TClass *cl = gROOT->GetClass(key->GetClassName());
-        if (!cl->InheritsFrom("TH1")) continue;  // Botam aquesta passa si no és histograma
-        TH1D *hist = key->ReadObject<TH1D>();
-        // We now have the hist "hist"
-        TF1 *funfit = fitGEL(hist, xmin, xmax); // We fit gaussian
-
-        mean[i]=funfit->GetParameter(0); sigma[i] = funfit->GetParameter(1);
-        Emean[i]=funfit->GetParError(0); Esigma[i] = funfit->GetParError(1);
-
-        TCanvas *c1 = new TCanvas(); // We draw the histogram just to see that it worked.
-
-        //hist->GetXaxis()->SetRangeUser(xmin[i], xmax2[i]);
-        Res[i]=235.5 * sigma[i]/mean[i];
-        ERes[i] = Res[i] * (Esigma[i]/sigma[i] + Emean[i]/mean[i]);
-        pos[i] = i*10; Epos[i] = 2;
-
-        i++;
-   }
-
-    TGraphErrors *grMean = new TGraphErrors(N,pos, mean,Epos,Emean); grMean->SetTitle("Position of the Cs137 peak " + name);
-    grMean->GetXaxis()->SetTitle("Position (mm)");     grMean->GetYaxis()->SetTitle("ADC channel"); 
-    TCanvas *cGrMean = new TCanvas(); grMean->SetMarkerStyle(2); grMean->Draw("AP"); // We draw the energy-ADC channel graph
-    //grMean->GetXaxis()->SetRangeUser(20,42);
+void macro(string configFileName = "settings.example"){
+        ifstream configFile;
+    configFile.open(configFileName, ios::in);
+    if(configFile.is_open()) cout<<"Reading configuration file.\n";
+    string line;  while(getline(configFile,line)) if (line[0] == '>') break; // We skip until the first interesting line
 
 
-    TGraphErrors *grRes = new TGraphErrors(N, pos, Res,Epos,ERes); grRes->SetTitle("Resolution of the Cs137 peak "+ name);
-    grRes->GetXaxis()->SetTitle("Position (mm)");     grRes->GetYaxis()->SetTitle("Resolution"); 
-    TCanvas *cGrRes = new TCanvas(); grRes->SetMarkerStyle(2); grRes->Draw("AP"); // We draw the energy-ADC channel graph
-    //grRes->GetXaxis()->SetRangeUser(20,42);
+    TString finName = line.substr(line.find("[")+2,line.find("]")-line.find("[")-3); // We obtain the imput filename
+    TFile *fin = new TFile(finName); std::cout<<"Opened input root file: "<<finName<<"\n"; // We open the root filename
 
-    TGraphErrors *grMeanRes = new TGraphErrors(N,mean,Res, Emean,ERes);  grMeanRes->SetTitle("Resolution  and mean Cs137 "+ name);
-    grMeanRes->GetXaxis()->SetTitle("ADC channel");     grMeanRes->GetYaxis()->SetTitle("Resolution"); 
-    TCanvas *cgrMeanRes = new TCanvas(); grMeanRes->SetMarkerStyle(2); grMeanRes->Draw("AP"); // We draw the energy-ADC channel graph
+    getline(configFile,line); const int N = stoi(line.substr(line.find("[")+1,line.find("]")-line.find("[")-1)); // we get N
 
-   /* TFile *fout = new TFile("Results.root","UPDATE");
-    fout->WriteObject(cGrRes,"Res "+ name);
-    fout->WriteObject(cGrMean,"Mean "+ name);
-    fout->Close(); */
+    while(getline(configFile,line)) if (line[0] == '>') break; // We skip until the next interesting line
+    double_t x[N]; double_t Ex[N]; double_t mean[N]; double_t Emean[N]; double_t res[N]; double_t Eres[N];
+
+    
+
 
 }
-
