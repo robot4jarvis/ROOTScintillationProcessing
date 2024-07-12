@@ -1,6 +1,9 @@
 # Data files (.root)
-.root
-.root.ig
+*.root
+*.root.ig
 
 # Config files (.txt)
-.txt
+*.txt
+
+# .vscode
+./.vscode
