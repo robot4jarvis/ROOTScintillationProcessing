@@ -1,4 +1,3 @@
-#define N 10
 #include <string>
 #include <TFile.h>
 #include <TNtuple.h>
@@ -92,6 +91,9 @@ void macro(string configFileName = "settings.example"){
     configFile.open(configFileName, ios::in);
     if(configFile.is_open()) cout<<"Reading configuration file.\n";
     string line;  while(getline(configFile,line)) if (line[0] == '>') break; // We skip until the first interesting line
+
+    TString finName = line.substr(line.find("[")+2,line.find("]")-line.find("[")-3); // We obtain the imput filename
+    std::cout<<"Opened input root file: "<<finName<<"\n"; TFile *fin = new TFile(finName);  // We open the root filename
 
     getline(configFile,line); const int N = stoi(line.substr(line.find("[")+1,line.find("]")-line.find("[")-1)); // we get N
 
