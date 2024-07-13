@@ -46,6 +46,11 @@ TF1 *fitGEL(TH1D *hist, double xmin, double xmax, char erc = '1'){
         if(erc == '0') {funGEL->FixParameter(4,0);};
     hist->Fit("funGEL","QR+"); //The R parameter restricts the fitting to [xmin, xmax]
 
+    TF1 *funBACK = new TF1("funBACK", fBACK,xmin,xmax,7);  // Only the Background
+        funBACK->SetParameters(funGEL->GetParameters());
+        funBACK->SetLineColor(kGreen);
+    funBACK->Draw("SAME");
+
     return funGEL;
 }
 TF1 *fitGEL2(TH1D *hist, double xmin, double xmid, double xmax, char erc = '1'){
@@ -70,6 +75,10 @@ TF1 *fitGEL2(TH1D *hist, double xmin, double xmid, double xmax, char erc = '1'){
         if(erc == '0') {funGEL2->FixParameter(4,0);}
     hist->Fit("funGEL2","QR+"); //The R parameter restricts the fitting to [xmin, xmax]
 
+    TF1 *funBACK = new TF1("funBACK", fBACK,xmin,xmax,7);  // Only the Background
+        funBACK->SetParameters(funGEL2->GetParameters());
+        funBACK->SetLineColor(kGreen);
+        funBACK->Draw("SAME");
     return funGEL2;
 }
 std::array<double,100> unStringCSV(string xString){
