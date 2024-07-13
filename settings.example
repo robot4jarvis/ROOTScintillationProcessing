@@ -4,7 +4,7 @@
 // Do not, under any circumstance, remove the brackets in this file nor add aditional lines (except where indicated)
 
 ================================
->Filename: ["Histograms.root"]
+>Filename: [Histograms.root]
 >Number_of_entries: [8] (number of peaks)
 ================================
 // Each histogram corresponds to a line.
@@ -15,7 +15,7 @@
 >4- "run59.root" "Mn54" [G1,1050,1300]
 ================================
 // Here goes the settings of the X axis
->X_axis_title: ["Energy (keV)"]
+>X_axis_title: [Energy (keV)]
 >X_values_(N values): [511.0,  1274.537, 1785.537, 661.657, 1173.228, 1332.492,  2505.72  , 834.848]
 >X_values_uncertainty: [  0.0,    0.007,     0.007,   0.003,    0.003,    0.004,     0.007,    0.003]
 ================================
