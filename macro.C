@@ -28,9 +28,18 @@ double GEL(double *x, double *par) {  // gauss + erc + lin
     // The function is:
     // fval = gauss(x, p0,p1) * p2 + p3*x + p4 * Erfx (x-p0)*p5 + p6
 }
+double GEL2(double *x, double *par) { // double gaussian + background. The parameters of the extra gaussian are 7,8 and 9 (10 in total)
+    double fval; double xval; xval = *x;
+    fval = TMath::Gaus(xval, par[0], par[1],false)*par[2]  + TMath::Gaus(xval, par[7],par[8],false) * par[9] + par[3]*(xval-par[0]) + par[4] * TMath::Erfc((xval-par[0])*par[5]) + par[6];
 
-// This function, given a histname (that must be inside a Histograms.root file), a xmin and a xmax (ROI), fits a gaussian function (+background) and returns the fitted function
-TF1 *fitGEL(TH1D *hist, double xmin, double xmax){
+    return fval;
+}
+double pol2(double *x, double *par) {  // function y = a*x*x + b*x + c
+    double fval; double xval; xval = *x;
+    fval = xval *xval* par[0] + xval* par[1] + par[2];
+    return fval;
+}
+TF1 *fitGEL(TH1D *hist, double xmin, double xmax, char erc = '1'){
 
     // we open the file with the Histograms and retreive the second one
     //TFile *f = new TFile("Histograms.root");
@@ -48,70 +57,134 @@ TF1 *fitGEL(TH1D *hist, double xmin, double xmax){
         funGEL->SetParLimits(1,0,(xmax-xmin));
         funGEL->SetParLimits(2,0,1.5*ymax);
         funGEL->SetParLimits(4,0,1.5*ymax);
-        funGEL->FixParameter(4,0);   funGEL->FixParameter(5,0); 
-
-
+        if(erc == '0') {funGEL->FixParameter(4,0);};
     hist->Fit("funGEL","QR+"); //The R parameter restricts the fitting to [xmin, xmax]
 
     return funGEL;
 }
+TF1 *fitGEL2(TH1D *hist, double xmin, double xmid, double xmax, char erc = '1'){
 
-void checkPositionalDependence(){
-    TString name = "J1";
+    // we open the file with the Histograms and retreive the second one
+    //TFile *f = new TFile("Histograms.root");
+    //TH1D *hist = (TH1D*)f->Get(histName);
 
-    //regions of interest
-  //  double xmin = 750; double xmax = 950; //G2
-    double xmin = 800; double xmax = 1100;  //J1
-    //double xmin = 1050; double xmax = 1300; //Z2
+    // we draw it (just to see that it worked)
+    hist->GetXaxis()->SetRangeUser(xmin, xmax);
+    double ymax = hist->GetBinContent(hist->GetMaximumBin());
+    // We try fitting a gaussian with the following parameters
+    TF1 *funGEL2 = new TF1("funGEL2", GEL2, xmin, xmax, 10); 
+        // We defined a TF1 object (function) with name "funGEL"", function GausLin (above), 7 parameters
+        funGEL2->SetParameters((xmid+xmin)/2, (xmid-xmin)/2, ymax, 0,0,1,0,(xmax+xmid)/2, (xmax-xmid)/2,ymax); // We set initial parameters (just a guess)
+        funGEL2->SetParNames("Centroid1","Sigma1","PeakVal1", "BackgroundSlope","ErcHeight","ErcMult","Baseline","Centroid2","Sigma2","PeakVal2");   // We give the parameters a proper name (lineal part ax + b)
+        funGEL2->SetParLimits(0,xmin, xmid);            funGEL2->SetParLimits(7,xmid, xmax);
+        funGEL2->SetParLimits(1,0,(xmax-xmin));         funGEL2->SetParLimits(8,0,(xmax-xmin));
+        funGEL2->SetParLimits(2,0,1.5*ymax);            funGEL2->SetParLimits(9,0,1.5*ymax);
+        funGEL2->SetParLimits(4,0,1.5*ymax);
 
-    double pos[N]; double Epos[N];
+        if(erc == '0') {funGEL2->FixParameter(4,0);}
+    hist->Fit("funGEL2","QR+"); //The R parameter restricts the fitting to [xmin, xmax]
+
+    return funGEL2;
+}
+
+void macro(string configFileName = "settings.example"){
+    ifstream configFile;
+    configFile.open(configFileName, ios::in);
+    if(configFile.is_open()) cout<<"Reading configuration file.\n";
+    string line;  while(getline(configFile,line)) if (line[0] == '>') break; // We skip until the first interesting line
+
+    getline(configFile,line); const int N = stoi(line.substr(line.find("[")+1,line.find("]")-line.find("[")-1)); // we get N
+
+    while(getline(configFile,line)) if (line[0] == '>') break; // We skip until the next interesting line
+    double_t x[N]; double_t Ex[N]; double_t mean[N]; double_t Emean[N]; double_t sigma[N]; double_t Esigma[N];
+    double_t Res[N]; double_t ERes[N];
+
+    TString histName; TString histTitle; string set; double_t xmin; double_t xmid; double_t xmax;
     int i = 0;
-    double mean[N]; double sigma[N]; double Res[N];
-    double Emean[N]; double Esigma[N]; double ERes[N];
+    while (i<N){
+        getline(configFile,line);
+        if (line[0] != '>') break; // If we finished reading those values, we exit.
+        histName = line.substr(line.find('"')+1,line.find('"',line.find('"')+1)-line.find('"')-1); line.erase(0,line.find('"',line.find('"')+1)+1);
+        histTitle = line.substr(line.find('"')+1,line.find('"',line.find('"')+1)-line.find('"')-1); line.erase(0,line.find('"',line.find('"')+1)+1);
+        
+        TH1D *hist = (TH1D*)fin->Get(histName);  hist->SetTitle(histTitle);  // We fetch the histogram from the file
+        std::cout<<"     Reading histogram "<<histTitle<<"\n";
+        while (true){
+            if(line.find("[") == -1) break;
+            set = line.substr(line.find("[")+1,line.find("]")-line.find("[")-1); line.erase(0,line.find("]")+1);
+            //std::cout<<"      >Performing fit on peak: "<<set<<"\n";
+            char opt = set[1];
+            if (set[0] == 'G'){
+                xmin = stod(set.substr(set.find(",")+1,set.find(",",set.find(",")+1))); set.erase(0,set.find(",",set.find(",")+1));
+                xmax = stod(set.substr(set.find(",")+1,set.find(",",set.find(",")+1)));
+                TF1 *funfit = fitGEL(hist, xmin, xmax);
+                    mean[i] = funfit->GetParameter(0); Emean[i] = funfit->GetParError(0);
+                    sigma[i] = funfit->GetParameter(1); Esigma[i] = funfit->GetParError(1);
+                    i++;
 
-    // We open the Histograms file and extract all data (that we will use for calibration)
-    TFile *fin = new TFile("Histograms" + name + ".root");
+            } else if(set[0] == 'D'){
+                xmin = stod(set.substr(set.find(",")+1,set.find(",",set.find(",")+1))); set.erase(0,set.find(",",set.find(",")+1));
+                xmid = stod(set.substr(set.find(",")+1,set.find(",",set.find(",")+1))); set.erase(0,set.find(",",set.find(",")+1));
+                xmax = stod(set.substr(set.find(",")+1,set.find(",",set.find(",")+1))); set.erase(0,set.find(",",set.find(",")+1));
+                
+                TF1 *funfit = fitGEL2(hist, xmin, xmid, xmax);
+                    mean[i] = funfit->GetParameter(0); Emean[i] = funfit->GetParError(0);
+                    sigma[i] = funfit->GetParameter(1); Esigma[i] = funfit->GetParError(1);
+                    i++;
 
-    for(auto k : *fin->GetListOfKeys()) {  // Loop over all objects in the file
-        TKey *key = static_cast<TKey*>(k);
-        TClass *cl = gROOT->GetClass(key->GetClassName());
-        if (!cl->InheritsFrom("TH1")) continue;  // Botam aquesta passa si no és histograma
-        TH1D *hist = key->ReadObject<TH1D>();
-        // We now have the hist "hist"
-        TF1 *funfit = fitGEL(hist, xmin, xmax); // We fit gaussian
+                    mean[i] = funfit->GetParameter(7); Emean[i] = funfit->GetParError(7);
+                    sigma[i] = funfit->GetParameter(8); Esigma[i] = funfit->GetParError(8);
+                    i++;
+            }
+        }
+        TCanvas *c1 = new TCanvas();
+        hist->Draw();
+    }
 
-        mean[i]=funfit->GetParameter(0); sigma[i] = funfit->GetParameter(1);
-        Emean[i]=funfit->GetParError(0); Esigma[i] = funfit->GetParError(1);
+    while(getline(configFile,line)) if (line[0] == '>') break; // We skip until the next interesting line
+    TString xAxisName = line.substr(line.find("[")+2,line.find("]")-line.find("[")-3);
 
-        TCanvas *c1 = new TCanvas(); // We draw the histogram just to see that it worked.
 
-        //hist->GetXaxis()->SetRangeUser(xmin[i], xmax2[i]);
+    while(getline(configFile,line)) if (line[0] == '>') break; string xString = line.substr(line.find("[")+1,line.find("]")-line.find("[")-2);
+    string val; char c; int j = 0;
+    for(int ii = 0; ii < xString.length(); ii ++){
+        //reads x string
+        c = xString[ii];
+        if(c == ' ') continue;
+        if((c == ',') || (ii == xString.length()-1)){
+            x[j] = stod(val);
+            j++;
+            val = "";
+        }
+        else val = val + c;
+    }
+    
+
+    while(getline(configFile,line)) if (line[0] == '>') break; xString = line.substr(line.find("[")+1,line.find("]")-line.find("[")-2);
+    val = ""; j = 0;
+    for(int ii = 0; ii < xString.length(); ii ++){
+        //reads x string
+        c = xString[ii];
+        if(c == ' ') continue;
+        if((c == ',')||(ii == xString.length()-1)){
+            Ex[j] = stod(val);
+            j++;
+            val = "";
+        }
+        else val = val + c;
+    }
+
+    for(i = 0; i < N; i++){
         Res[i]=235.5 * sigma[i]/mean[i];
         ERes[i] = Res[i] * (Esigma[i]/sigma[i] + Emean[i]/mean[i]);
-        pos[i] = i*10; Epos[i] = 2;
+    }
 
-        i++;
-   }
-
-    TGraphErrors *grMean = new TGraphErrors(N,pos, mean,Epos,Emean); grMean->SetTitle("Position of the Cs137 peak " + name);
-    grMean->GetXaxis()->SetTitle("Position (mm)");     grMean->GetYaxis()->SetTitle("ADC channel"); 
+    TGraphErrors *grMean = new TGraphErrors(N,x, mean,Ex,Emean); grMean->SetTitle("Mean peak position depending on " + xAxisName);
+    grMean->GetXaxis()->SetTitle(xAxisName);     grMean->GetYaxis()->SetTitle("ADC channel"); 
     TCanvas *cGrMean = new TCanvas(); grMean->SetMarkerStyle(2); grMean->Draw("AP"); // We draw the energy-ADC channel graph
-    //grMean->GetXaxis()->SetRangeUser(20,42);
 
-
-    TGraphErrors *grRes = new TGraphErrors(N, pos, Res,Epos,ERes); grRes->SetTitle("Resolution of the Cs137 peak "+ name);
-    grRes->GetXaxis()->SetTitle("Position (mm)");     grRes->GetYaxis()->SetTitle("Resolution"); 
+    TGraphErrors *grRes = new TGraphErrors(N,x, Res,Ex,ERes); grRes->SetTitle("Resolution");
+    grRes->GetXaxis()->SetTitle(xAxisName);     grRes->GetYaxis()->SetTitle("Resolution"); 
     TCanvas *cGrRes = new TCanvas(); grRes->SetMarkerStyle(2); grRes->Draw("AP"); // We draw the energy-ADC channel graph
-    //grRes->GetXaxis()->SetRangeUser(20,42);
-
-    TGraphErrors *grMeanRes = new TGraphErrors(N,mean,Res, Emean,ERes);  grMeanRes->SetTitle("Resolution  and mean Cs137 "+ name);
-    grMeanRes->GetXaxis()->SetTitle("ADC channel");     grMeanRes->GetYaxis()->SetTitle("Resolution"); 
-    TCanvas *cgrMeanRes = new TCanvas(); grMeanRes->SetMarkerStyle(2); grMeanRes->Draw("AP"); // We draw the energy-ADC channel graph
-
-   /* TFile *fout = new TFile("Results.root","UPDATE");
-    fout->WriteObject(cGrRes,"Res "+ name);
-    fout->WriteObject(cGrMean,"Mean "+ name);
-    fout->Close(); */
-
 }
 
