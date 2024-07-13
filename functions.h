@@ -15,6 +15,11 @@ double GEL2(double *x, double *par) { // double gaussian + background. The param
 
     return fval;
 }
+double fBACK(double *x, double *par) {  // Only the non-gaussian part of the previous function
+    double fval; double xval; xval = *x;
+    fval =  par[3]*(xval-par[0]) + par[4] * TMath::Erfc((xval-par[0])*par[5]) + par[6];
+    return fval;
+}
 double pol2(double *x, double *par) {  // function y = a*x*x + b*x + c
     double fval; double xval; xval = *x;
     fval = xval *xval* par[0] + xval* par[1] + par[2];
@@ -66,4 +71,26 @@ TF1 *fitGEL2(TH1D *hist, double xmin, double xmid, double xmax, char erc = '1'){
     hist->Fit("funGEL2","QR+"); //The R parameter restricts the fitting to [xmin, xmax]
 
     return funGEL2;
+}
+std::array<double,100> unStringCSV(string xString){
+    std::array<double,100> x{0};
+    char c; string val; int j = 0; double xval;
+    for(int ii = 0; ii <= xString.length(); ii ++){
+        c = xString[ii];
+        if(c == ' ') continue;
+        if((c == ',') || (ii > xString.length()-1)){
+            x[j] = stod(val); val = "";
+            j++;
+        }
+        else val = val + c;
+    }
+    return x;
+}
+string extract(string line, char del1 = '[', char del2 = ']'){
+    string result =line.substr(line.find(del1)+1,line.find(del2,line.find(del1)+1)-line.find(del1)-1);
+    return result;
+}
+string cut(string line, char del1 = '[', char del2 = ']'){
+    line.erase(0,line.find(del2,line.find(del1)+1)+1);
+    return line;
 }

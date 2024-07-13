@@ -9,9 +9,9 @@
 ================================
 // Each histogram corresponds to a line.
 >0- "histogram name","Title", [regions]
->1- "run60.root" "Na22" [G1,600,830] [G1,1650,1950] [G1,2300,2650]
+>1- "run60.root" "Na22" [G0,550,850] [G1,1650,1950] [G1,2300,2650]
 >2- "run62.root" "Cs137" [G1,800,1000]
->3- "run61.root" "Co60" [D1,1500,1800,2100] [G0,3300,3650]
+>3- "run61.root" "Co60" [D1,1500,1750,2000] [G0,3300,3650]
 >4- "run59.root" "Mn54" [G1,1050,1300]
 ================================
 // Here goes the settings of the X axis

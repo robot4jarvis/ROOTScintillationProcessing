@@ -1,5 +1,6 @@
 #include <string>
 #include <array>
+#include "functions.h"
 #include <TFile.h>
 #include <TNtuple.h>
 #include <TH1.h>
@@ -16,31 +17,6 @@
 #include <TGraphErrors.h>
 #include <TKey.h>
 #include <TH1D.h>
-
-std::array<double,100> unStringCSV(string xString){
-    std::array<double,100> x{0};
-    char c; string val; int j = 0; double xval;
-    for(int ii = 0; ii <= xString.length(); ii ++){
-        c = xString[ii];
-        if(c == ' ') continue;
-        if((c == ',') || (ii > xString.length()-1)){
-            x[j] = stod(val); val = "";
-            j++;
-        }
-        else val = val + c;
-    }
-    return x;
-}
-
-string extract(string line, char del1 = '[', char del2 = ']'){
-    string result =line.substr(line.find(del1)+1,line.find(del2,line.find(del1)+1)-line.find(del1)-1);
-    return result;
-}
-
-string cut(string line, char del1 = '[', char del2 = ']'){
-    line.erase(0,line.find(del2,line.find(del1)+1)+1);
-    return line;
-}
 
 void macro(string configFileName = "settings.example"){
     ifstream configFile;
@@ -78,9 +54,11 @@ void macro(string configFileName = "settings.example"){
                     mean[i] = funfit->GetParameter(0); Emean[i] = funfit->GetParError(0);
                     sigma[i] = funfit->GetParameter(1); Esigma[i] = funfit->GetParError(1);
                     i++;
+                std::cout<<"|"<<xmin<<"|"<<xmax<<"|\n";
 
             } else if(set[0] == 'D'){
-                xmin = stod(extract(set,',',',')); set = cut(set,',',','); xmid = stod(extract(set,',',',')); set = cut(set,',',','); xmax = stod(extract(set,',',','));
+                xmin = stod(extract(set,',',',')); set = "," + cut(set,',',','); 
+                xmid = stod(extract(set,',',',')); set = cut(set,',',','); xmax = stod(extract(set,',',','));
                 
                 TF1 *funfit = fitGEL2(hist, xmin, xmid, xmax, opt);
                     mean[i] = funfit->GetParameter(0); Emean[i] = funfit->GetParError(0);
@@ -111,7 +89,6 @@ void macro(string configFileName = "settings.example"){
     for(i = 0; i < N; i++){
         Res[i]=235.5 * sigma[i]/mean[i];
         ERes[i] = Res[i] * (Esigma[i]/sigma[i] + Emean[i]/mean[i]);
-        std::cout<<"E value: "<<x[i]<<"+-"<<Ex[i]<<"\n";
     }
 
     TGraphErrors *grMean = new TGraphErrors(N,x, mean,Ex,Emean); grMean->SetTitle("Mean peak position depending on " + xAxisName);
