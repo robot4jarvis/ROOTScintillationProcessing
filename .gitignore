@@ -6,4 +6,4 @@
 *.txt
 
 # .vscode
-.vscode/
+.vscode/*
