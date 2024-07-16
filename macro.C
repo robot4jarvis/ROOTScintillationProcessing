@@ -32,6 +32,8 @@ void macro(string configFileName = "settings.example"){
     while(getline(configFile,line)) if (line[0] == '>') break; // We skip until the next interesting line
     double_t mean[N]; double_t Emean[N]; double_t sigma[N]; double_t Esigma[N];
     double_t Res[N]; double_t ERes[N];
+    double_t PeakArea[N]; double_t EPeakArea[N];
+    double_t TotalArea[N]; double_t PTR[N]; double_t EPTR[N];
 
     TString histName; TString histTitle; string set; double_t xmin; double_t xmid; double_t xmax;
     int i = 0;
@@ -53,6 +55,9 @@ void macro(string configFileName = "settings.example"){
                 TF1 *funfit = fitGEL(hist, xmin, xmax, opt);
                     mean[i] = funfit->GetParameter(0); Emean[i] = funfit->GetParError(0);
                     sigma[i] = funfit->GetParameter(1); Esigma[i] = funfit->GetParError(1);
+                    PeakArea[i] = funfit->GetParameter(2) * sigma[i] * TMath::Sqrt(TMath::Pi() * 2);
+                    EPeakArea[i] = PeakArea[i]* (funfit->GetParError(2)/funfit->GetParameter(2) + Esigma[i]/sigma[i]);
+                    TotalArea[i] = hist->GetEntries();
                     i++;
                 std::cout<<"|"<<xmin<<"|"<<xmax<<"|\n";
 
@@ -63,10 +68,16 @@ void macro(string configFileName = "settings.example"){
                 TF1 *funfit = fitGEL2(hist, xmin, xmid, xmax, opt);
                     mean[i] = funfit->GetParameter(0); Emean[i] = funfit->GetParError(0);
                     sigma[i] = funfit->GetParameter(1); Esigma[i] = funfit->GetParError(1);
+                    PeakArea[i] = funfit->GetParameter(2) * sigma[i] * TMath::Sqrt(TMath::Pi() * 2);
+                    EPeakArea[i] = PeakArea[i]* (funfit->GetParError(2)/funfit->GetParameter(2) + Esigma[i]/sigma[i]);
+                    TotalArea[i] = hist->GetEntries();
                     i++;
 
                     mean[i] = funfit->GetParameter(7); Emean[i] = funfit->GetParError(7);
                     sigma[i] = funfit->GetParameter(8); Esigma[i] = funfit->GetParError(8);
+                    PeakArea[i] = funfit->GetParameter(9) * sigma[i] * TMath::Sqrt(TMath::Pi() * 2);
+                    EPeakArea[i] = PeakArea[i]* (funfit->GetParError(9)/funfit->GetParameter(9) + Esigma[i]/sigma[i]);
+                    TotalArea[i] = hist->GetEntries();
                     i++;
             }
         }
@@ -89,6 +100,7 @@ void macro(string configFileName = "settings.example"){
     for(i = 0; i < N; i++){
         Res[i]=235.5 * sigma[i]/mean[i];
         ERes[i] = Res[i] * (Esigma[i]/sigma[i] + Emean[i]/mean[i]);
+        PTR[i] = 100 * PeakArea[i]/TotalArea[i]; EPTR[i] = 100 * EPeakArea[i]/TotalArea[i];
     }
 
     TGraphErrors *grMean = new TGraphErrors(N,x, mean,Ex,Emean); grMean->SetTitle("Mean peak position depending on " + xAxisName);
@@ -99,6 +111,15 @@ void macro(string configFileName = "settings.example"){
     TGraphErrors *grRes = new TGraphErrors(N,x, Res,Ex,ERes); grRes->SetTitle("Resolution");
     grRes->GetXaxis()->SetTitle(xAxisName);     grRes->GetYaxis()->SetTitle("Resolution"); 
     TCanvas *cGrRes = new TCanvas(); grRes->SetMarkerStyle(2); grRes->Draw("AP"); // We draw the energy-ADC channel graph
+    
+
+    TGraphErrors *grPeakArea = new TGraphErrors(N,x, PeakArea,Ex,EPeakArea); grPeakArea->SetTitle("Peak Areas (for every peak)");
+    grPeakArea->GetXaxis()->SetTitle(xAxisName);     grPeakArea->GetYaxis()->SetTitle("Peak Areas (ADC * counts)"); 
+    TCanvas *cGrPeakArea = new TCanvas(); grPeakArea->SetMarkerStyle(2); grPeakArea->Draw("AP"); // We draw the energy-ADC channel graph
+
+    TGraphErrors *grPTR = new TGraphErrors(N,x, PeakArea,Ex,EPeakArea); grPTR->SetTitle("Peak to Total Ratios (for every peak)");
+    grPTR->GetXaxis()->SetTitle(xAxisName);     grPTR->GetYaxis()->SetTitle("Peak to Total Ratio (%)"); 
+    TCanvas *cGrPTR = new TCanvas(); grPTR->SetMarkerStyle(2); grPTR->Draw("AP"); // We draw the energy-ADC channel graph
 
     while(getline(configFile,line)) if (line[0] == '>') break; string opt1 = extract(line);
     while(getline(configFile,line)) if (line[0] == '>') break; string opt2 = extract(line);
@@ -108,7 +129,6 @@ void macro(string configFileName = "settings.example"){
     while(getline(configFile,line)) if (line[0] == '>') break; TString option = extract(line);
 
     TFile *fout = new TFile(foutName, option);
-
     
     if (opt1 == 'y'){
         TF1 *funCal = new TF1("funCal",pol2,0.0,16384.0,3);
