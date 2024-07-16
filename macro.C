@@ -95,8 +95,43 @@ void macro(string configFileName = "settings.example"){
     grMean->GetXaxis()->SetTitle(xAxisName);     grMean->GetYaxis()->SetTitle("ADC channel"); 
     TCanvas *cGrMean = new TCanvas(); grMean->SetMarkerStyle(2); grMean->Draw("AP"); // We draw the energy-ADC channel graph
 
+
     TGraphErrors *grRes = new TGraphErrors(N,x, Res,Ex,ERes); grRes->SetTitle("Resolution");
     grRes->GetXaxis()->SetTitle(xAxisName);     grRes->GetYaxis()->SetTitle("Resolution"); 
     TCanvas *cGrRes = new TCanvas(); grRes->SetMarkerStyle(2); grRes->Draw("AP"); // We draw the energy-ADC channel graph
+
+    while(getline(configFile,line)) if (line[0] == '>') break; string opt1 = extract(line);
+    while(getline(configFile,line)) if (line[0] == '>') break; string opt2 = extract(line);
+    
+    
+    while(getline(configFile,line)) if (line[0] == '>') break; TString foutName = extract(line);
+    while(getline(configFile,line)) if (line[0] == '>') break; TString option = extract(line);
+
+    TFile *fout = new TFile(foutName, option);
+
+    
+    if (opt1 == 'y'){
+        TF1 *funCal = new TF1("funCal",pol2,0.0,16384.0,3);
+        funCal->FixParameter(0,0);
+        if (opt2 == 'y') {
+            funCal->FixParameter(2,0);
+        }
+        grMean->Fit(funCal);
+        fout->WriteObject(cGrMean,"MeanGraph");
+        fout->WriteObject(cGrRes,"Energy Resolution");
+        fout->WriteObject(funCal,"CalibrationFunction");
+        fout->Close();
+        while(getline(configFile,line)) if (line[0] == '>') break; line = extract(line);
+        if (line == 'y'){
+            calibrate(finName, foutName, funCal);
+        }
+
+    } else {
+        fout->WriteObject(cGrMean,"MeanGraph");
+        fout->WriteObject(cGrRes,"Energy Resolution");
+        fout->Close();
+    }
+    
+
 }
 

@@ -19,14 +19,16 @@
 >X_values_(N values): [511.0,  1274.537, 1785.537, 661.657, 1173.228, 1332.492,  2505.72  , 834.848]
 >X_values_uncertainty: [  0.0,    0.007,     0.007,   0.003,    0.003,    0.004,     0.007,    0.003]
 ================================
-The results can be fitted to a function of the form f(x) = a x^2 + b x + c.
-The values a,b,c can be fixed. Write the corresponding value in brackets.
-Do you want to? (y/n) = [y]
-(a,b,c) = [0,-,0]
+The results can be fitted to a function of the form f(x) = ax + b
+The values a,b can be fixed. Write the corresponding value in brackets.
+> Do you want to? (y/n) = [y]
+> Do you want b = 0? (y/n) = [y]
 
 ================================
 Additionally, you can save the corresponding results to a new root file:
-Output filename: ["Results.root"]
-Option: ["UPDATE"] ("UPDATE, "RECREATE", etc.)
+> Output filename: [Results.root]
+> Option: [RECREATE] ("UPDATE, "RECREATE", etc.)
+================================
+> Save calibrated histograms? [n]
 
 

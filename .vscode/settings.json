@@ -74,6 +74,8 @@
         "xloctime": "cpp",
         "xmemory": "cpp",
         "xtr1common": "cpp",
-        "fitGauss.C": "cpp"
+        "fitGauss.C": "cpp",
+        "macro59_62.C": "cpp",
+        "iomanip": "cpp"
     }
 }
