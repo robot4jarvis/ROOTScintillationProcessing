@@ -32,9 +32,10 @@ void macro(string configFileName = "settings.example"){
     while(getline(configFile,line)) if (line[0] == '>') break; // We skip until the next interesting line
     double_t mean[N]; double_t Emean[N]; double_t sigma[N]; double_t Esigma[N];
     double_t Res[N]; double_t ERes[N];
+    double_t TotalArea[N]; double_t PeakArea[N];
 
     TString histName; TString histTitle; string set; double_t xmin; double_t xmid; double_t xmax;
-    int i = 0;
+    int i = 0; int j = 0;
     while (i<N){
         getline(configFile,line);
         if (line[0] != '>') break; // If we finished reading those values, we exit.
@@ -44,18 +45,18 @@ void macro(string configFileName = "settings.example"){
         TH1D *hist = (TH1D*)fin->Get(histName);  hist->SetTitle(histTitle);  // We fetch the histogram from the file
         std::cout<<"     Reading histogram "<<histTitle<<"\n";
         while (true){
+            // This block analyses all peaks in a spectra
             if(line.find("[") == -1) break;
             set = extract(line); line = cut(line);
             //std::cout<<"      >Performing fit on peak: "<<set<<"\n";
             char opt = set[1];
-            if (set[0] == 'G'){
+            if (set[0] == 'G')
                 xmin = stod(extract(set,',',',')); set = cut(set,',',','); xmax = stod(extract(set,',',','));
                 TF1 *funfit = fitGEL(hist, xmin, xmax, opt);
                     mean[i] = funfit->GetParameter(0); Emean[i] = funfit->GetParError(0);
                     sigma[i] = funfit->GetParameter(1); Esigma[i] = funfit->GetParError(1);
                     i++;
-                std::cout<<"|"<<xmin<<"|"<<xmax<<"|\n";
-
+                PeakArea[j] = PeakArea[j] + funfit->GetParameter(2) * TMath::Sqrt(2*TMath::Pi()) * funfit->GetParameter(1);       
             } else if(set[0] == 'D'){
                 xmin = stod(extract(set,',',',')); set = "," + cut(set,',',','); 
                 xmid = stod(extract(set,',',',')); set = cut(set,',',','); xmax = stod(extract(set,',',','));
@@ -64,14 +65,18 @@ void macro(string configFileName = "settings.example"){
                     mean[i] = funfit->GetParameter(0); Emean[i] = funfit->GetParError(0);
                     sigma[i] = funfit->GetParameter(1); Esigma[i] = funfit->GetParError(1);
                     i++;
-
+                PeakArea[j] = PeakArea[j] + funfit->GetParameter(2) * TMath::Sqrt(2*TMath::Pi()) * funfit->GetParameter(1);       
                     mean[i] = funfit->GetParameter(7); Emean[i] = funfit->GetParError(7);
                     sigma[i] = funfit->GetParameter(8); Esigma[i] = funfit->GetParError(8);
+                PeakArea[j] = PeakArea[j] + funfit->GetParameter(9) * TMath::Sqrt(2*TMath::Pi()) * funfit->GetParameter(8);       
                     i++;
+
             }
         }
+        
+        PeakArea[j] = 
         TCanvas *c1 = new TCanvas();
-        hist->Draw();
+        hist->Draw(); j++;
     }
 
     while(getline(configFile,line)) if (line[0] == '>') break; // We skip until the next interesting line

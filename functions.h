@@ -133,3 +133,54 @@ void calibrate(TString inputfile, TString outputfile, TF1 *calFun){// Given an i
    }
    fin->Close(); fout->Close();
 }
+
+class Peak{
+private:
+    /* data */
+public:
+    Peak(TH1D *hist, double xmin, double xmid, double xmax, char erc = '1', int numb = 0);
+    Peak(TH1D *hist, double xmin, double xmax, char erc = '1');
+    TF1 PeakFunction;
+    TF1 BackFunction;
+    double Mean; double EMean;
+    double Sigma, double ESigma;
+    double Amplitude; double EAmplitude;
+    double FWHM; double EFWHM;
+    double Res; double ERes;
+    double Area; double EArea;
+}
+
+Peak::Peak(TH1D *hist, double xmin, double xmid, double xmax, char erc = '1', int numb = 0){
+    TF1 fitDouble = fitGEL2(hist, xmin, xmid, xmax, erc);
+    PeakFunction = new TF1("fun",GEL, xmin, xmax, 7);
+    BackFunction = new TF1("backFun", BACK,xmin,xmax,7);
+    double par[10] = fitDouble->GetParameters();
+    if(numb = 0){
+        PeakFunction->SetParameters(par[0],par[1],par[2],par[3],par[4],par[5],par[6]);
+        Mean = fitDouble->GetParameter(0); EMean = fitDouble->GetParError(0);
+        Sigma = fitDouble->GetParameter(1); ESigma = fitDouble->GetParError(1);
+        Amplitude = fitDouble->GetParameter(2); EAmplitude = fitDouble->GetParError(2);
+    }else {if(numb = 1){
+        PeakFunction->SetParameters(par[7],par[8],par[9],par[3],par[4],par[5],par[6]);
+        Mean = fitDouble->GetParameter(7); EMean = fitDouble->GetParError(7);
+        Sigma = fitDouble->GetParameter(8); ESigma = fitDouble->GetParError(8);
+        Amplitude = fitDouble->GetParameter(9); EAmplitude = fitDouble->GetParError(9);
+    }}
+    BackFunction->SetParameters(par[0],par[1],par[2],par[3],par[4],par[5],par[6]);
+    FWGM = Sigma*2.355; EFWHM = ESigma * 2.355; 
+    ERes = Res * (ESigma/Sigma + EMean/Mean);
+    Area = Amplitude * Sigma * TMath::sqrt(2*TMath::Pi()); EArea = Area * (ESigma/Sigma + EAmplitude/Amplitude);
+}
+
+Peak::Peak(TH1D *hist, double xmin, double xmax, char erc = '1'){
+    PeakFunction = fitGEL(hist, xmin, xmax, erc);
+    BackFunction = new TF1("backFun", BACK,xmin,xmax,7);
+    Mean = PeakFunction->GetParameter(0); EMean = PeakFunction->GetParError(0);
+    Sigma = PeakFunction->GetParameter(1); ESigma = PeakFunction->GetParError(1);
+    Amplitude = PeakFunction->GetParameter(2); EAmplitude = PeakFunction->GetParError(2);
+    BackFunction->SetParameters(PeakFunction->GetParameters());
+    FWGM = Sigma*2.355; EFWHM = ESigma * 2.355; 
+    ERes = Res * (ESigma/Sigma + EMean/Mean);
+    Area = Amplitude * Sigma * TMath::sqrt(2*TMath::Pi()); EArea = Area * (ESigma/Sigma + EAmplitude/Amplitude);
+}
+
